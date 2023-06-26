@@ -24,8 +24,8 @@ const formRender = (state, { input, button, feedbackMessage }) => {
       throw new Error(`unknown input state ${state}`);
   }
 };
-const showMessage = (value, messageElement) => {
-  messageElement.textContent = value;
+const showMessage = (value, messageElement, i18nInstance) => {
+  messageElement.textContent = i18nInstance.t(`feedbackMessages.${value}`);
 };
 const feedsRender = () => {
 
