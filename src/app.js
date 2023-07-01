@@ -1,6 +1,8 @@
 import * as yup from 'yup';
 import onChange from 'on-change';
 import i18next from 'i18next';
+import axios from 'axios';
+import uniqueId from 'lodash/uniqueId';
 import resources from './locales/index';
 import {
   formRender,
@@ -8,6 +10,45 @@ import {
   feedsRender,
   postsRender,
 } from './view';
+
+const parseRSS = (html, link) => {
+  const rss = html.querySelector('rss');
+  if (!rss) {
+    throw new Error('notContainRSS');
+  }
+
+  const feedTitle = rss.querySelector('title').textContent;
+  const feedDescription = rss.querySelector('description').textContent;
+  const feedLink = link;
+  const feedID = uniqueId();
+  const feed = {
+    title: feedTitle,
+    description: feedDescription,
+    link: feedLink,
+    id: feedID,
+  };
+
+  const posts = [];
+  const items = rss.querySelectorAll('item');
+  items.forEach((item) => {
+    const postTitle = item.querySelector('title').textContent;
+    const postDescription = item.querySelector('description').textContent;
+    const postLink = item.querySelector('link').textContent;
+    const postPubDate = item.querySelector('pubDate').textContent;
+    const postID = uniqueId();
+    const post = {
+      title: postTitle,
+      description: postDescription,
+      link: postLink,
+      pubDate: postPubDate,
+      id: postID,
+      feedID,
+    };
+    posts.push(post);
+  });
+
+  return { feed, posts };
+};
 
 export default () => {
   const defaultLanguage = 'ru';
@@ -44,11 +85,11 @@ export default () => {
     input: document.querySelector('#url-input'),
     feedbackMessage: document.querySelector('.feedback'),
     button: document.querySelector('[type="submit"]'),
-    feedsContainer: null,
-    postsContainer: null,
+    feedsContainer: document.querySelector('.feeds'),
+    postsContainer: document.querySelector('.posts'),
   };
 
-  const watchedState = onChange(state, (path, value) => {
+  const watchedState = onChange(state, (path, value, prevValue) => {
     switch (path) {
       case 'ui.form.state':
         formRender(value, elements);
@@ -57,10 +98,10 @@ export default () => {
         showMessage(value, elements.feedbackMessage, i18nInstance);
         break;
       case 'ui.content.feeds':
-        feedsRender(value, elements.feedsContainer);
+        feedsRender(value, elements.feedsContainer, i18nInstance);
         break;
       case 'ui.content.posts':
-        postsRender(value, elements.postsContainer);
+        postsRender(value, prevValue, elements.postsContainer, i18nInstance);
         break;
       default:
         throw new Error(`unknown state path ${path}`);
@@ -71,23 +112,41 @@ export default () => {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    const shema = yup.string().url().notOneOf(watchedState.ui.content.feeds);
+    const feedLinks = state.ui.content.feeds.map((feed) => feed.link);
+    const shema = yup.string().url().notOneOf(feedLinks);
     const formData = new FormData(e.target);
     const url = formData.get('url').trim();
     shema.validate(url)
-      .then((feed) => {
+      .then((validURL) => {
+        watchedState.ui.form.message = null;
         watchedState.ui.form.state = 'processing';
-        return feed;
+        axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(validURL)}`)
+          .then((response) => {
+            const parser = new DOMParser();
+            const html = parser.parseFromString(response.data.contents, 'text/xml');
+            return parseRSS(html, validURL);
+          })
+          .then(({ feed, posts }) => {
+            watchedState.ui.content.feeds.push(feed);
+            watchedState.ui.content.posts.push(...posts);
+            watchedState.ui.form.message = 'successed';
+            watchedState.ui.form.state = 'processed';
+          })
+          .then(() => {
+            watchedState.ui.form.state = 'filling';
+          })
+          .catch((error) => {
+            if (error.message === 'Network Error') {
+              watchedState.ui.form.message = 'networkError';
+            } else {
+              watchedState.ui.form.message = error.message;
+            }
+            watchedState.ui.form.state = 'failed';
+          });
       })
       .catch((error) => {
         watchedState.ui.form.message = error.errors;
         watchedState.ui.form.state = 'failed';
-      })
-      .then((feed) => {
-
-      })
-      .catch((error) => {
-
       });
   });
 };
