@@ -9,5 +9,8 @@ export default {
     },
     posts: 'Посты',
     feeds: 'Фиды',
+    action: {
+      view: 'Просмотр',
+    },
   },
 };
