@@ -104,6 +104,9 @@ const postsRender = (posts, currentPosts, container, i18nInstance) => {
     itemLink.setAttribute('target', '_blank');
     itemLink.setAttribute('rel', 'noopener noreferrer');
     itemLink.textContent = post.title;
+    itemLink.addEventListener('click', (event) => {
+      event.target.classList.replace('fw-bold', 'fw-normal');
+    });
 
     const itemBtn = document.createElement('button');
     itemBtn.setAttribute('type', 'button');
@@ -112,6 +115,22 @@ const postsRender = (posts, currentPosts, container, i18nInstance) => {
     itemBtn.dataset.bsToggle = 'modal';
     itemBtn.dataset.bsTarget = '#modal';
     itemBtn.textContent = i18nInstance.t('action.view');
+    itemBtn.addEventListener('click', (event) => {
+      const linkElement = event.target.previousSibling;
+      linkElement.classList.replace('fw-bold', 'fw-normal');
+
+      const modal = document.querySelector('.modal');
+
+      const modalTitle = modal.querySelector('.modal-title');
+      modalTitle.textContent = post.title;
+
+      const modalBody = modal.querySelector('.modal-body');
+      modalBody.textContent = post.description;
+
+      const modalFooter = modal.querySelector('.modal-footer');
+      const btnEl = modalFooter.querySelector('.btn');
+      btnEl.setAttribute('href', post.link);
+    });
 
     listItem.append(itemLink, itemBtn);
     listGroup.prepend(listItem);
