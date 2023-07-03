@@ -11,7 +11,9 @@ import {
   postsRender,
 } from './view';
 
-const parseRSS = (html, link) => {
+const parseRSS = (response) => {
+  const parser = new DOMParser();
+  const html = parser.parseFromString(response.data.contents, 'text/xml');
   const rss = html.querySelector('rss');
   if (!rss) {
     throw new Error('notContainRSS');
@@ -19,7 +21,7 @@ const parseRSS = (html, link) => {
 
   const feedTitle = rss.querySelector('title').textContent;
   const feedDescription = rss.querySelector('description').textContent;
-  const feedLink = link;
+  const feedLink = response.data.status.url;
   const feedID = uniqueId();
   const feed = {
     title: feedTitle,
@@ -112,7 +114,7 @@ export default () => {
   form.addEventListener('submit', (e) => {
     e.preventDefault();
 
-    const feedLinks = state.ui.content.feeds.map((feed) => feed.link);
+    const feedLinks = watchedState.ui.content.feeds.map((feed) => feed.link);
     const shema = yup.string().url().notOneOf(feedLinks);
     const formData = new FormData(e.target);
     const url = formData.get('url').trim();
@@ -121,11 +123,7 @@ export default () => {
         watchedState.ui.form.message = null;
         watchedState.ui.form.state = 'processing';
         axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(validURL)}`)
-          .then((response) => {
-            const parser = new DOMParser();
-            const html = parser.parseFromString(response.data.contents, 'text/xml');
-            return parseRSS(html, validURL);
-          })
+          .then(parseRSS)
           .then(({ feed, posts }) => {
             watchedState.ui.content.feeds.push(feed);
             watchedState.ui.content.posts.push(...posts);
@@ -149,4 +147,29 @@ export default () => {
         watchedState.ui.form.state = 'failed';
       });
   });
+  const updateTracking = (feeds, currentPosts) => {
+    console.log('Tracking');
+    if (feeds.length !== 0) {
+      const currentPostsLinks = currentPosts.map((post) => post.link);
+      const promises = feeds.map((feed) => axios
+        .get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(feed.link)}`)
+        .then(parseRSS)
+        .then(({ posts }) => posts.filter((post) => !currentPostsLinks.includes(post.link)))
+        .then((newPosts) => newPosts.map((newPost) => {
+          newPost.feedID = feed.id;
+          return newPost;
+        })));
+      const promise = Promise.all(promises);
+      promise
+        .then((contents) => watchedState.ui.content.posts.push(...contents.flat()))
+        .catch((error) => {
+          console.log(error);
+        });
+    }
+    setTimeout(() => updateTracking(
+      watchedState.ui.content.feeds,
+      watchedState.ui.content.posts,
+    ), 5000);
+  };
+  updateTracking(watchedState.ui.content.feeds, watchedState.ui.content.posts);
 };
