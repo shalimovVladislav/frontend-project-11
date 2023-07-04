@@ -4,53 +4,13 @@ import i18next from 'i18next';
 import axios from 'axios';
 import uniqueId from 'lodash/uniqueId';
 import resources from './locales/index';
+import parseRSS from './parser';
 import {
   formRender,
   showMessage,
   feedsRender,
   postsRender,
 } from './view';
-
-const parseRSS = (response) => {
-  const parser = new DOMParser();
-  const html = parser.parseFromString(response.data.contents, 'text/xml');
-  const rss = html.querySelector('rss');
-  if (!rss) {
-    throw new Error('notContainRSS');
-  }
-
-  const feedTitle = rss.querySelector('title').textContent;
-  const feedDescription = rss.querySelector('description').textContent;
-  const feedLink = response.data.status.url;
-  const feedID = uniqueId();
-  const feed = {
-    title: feedTitle,
-    description: feedDescription,
-    link: feedLink,
-    id: feedID,
-  };
-
-  const posts = [];
-  const items = rss.querySelectorAll('item');
-  items.forEach((item) => {
-    const postTitle = item.querySelector('title').textContent;
-    const postDescription = item.querySelector('description').textContent;
-    const postLink = item.querySelector('link').textContent;
-    const postPubDate = item.querySelector('pubDate').textContent;
-    const postID = uniqueId();
-    const post = {
-      title: postTitle,
-      description: postDescription,
-      link: postLink,
-      pubDate: postPubDate,
-      id: postID,
-      feedID,
-    };
-    posts.push(post);
-  });
-
-  return { feed, posts };
-};
 
 export default () => {
   const defaultLanguage = 'ru';
@@ -125,7 +85,13 @@ export default () => {
         axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${encodeURIComponent(validURL)}`)
           .then(parseRSS)
           .then(({ feed, posts }) => {
+            feed.link = validURL;
+            feed.id = uniqueId;
             watchedState.ui.content.feeds.push(feed);
+            posts.forEach((post) => {
+              post.feedID = feed.id;
+              post.id = uniqueId();
+            });
             watchedState.ui.content.posts.push(...posts);
             watchedState.ui.form.message = 'successed';
             watchedState.ui.form.state = 'processed';
@@ -157,6 +123,7 @@ export default () => {
         .then(({ posts }) => posts.filter((post) => !currentPostsLinks.includes(post.link)))
         .then((newPosts) => newPosts.map((newPost) => {
           newPost.feedID = feed.id;
+          newPost.id = uniqueId();
           return newPost;
         })));
       const promise = Promise.all(promises);
