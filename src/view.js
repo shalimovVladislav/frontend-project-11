@@ -1,4 +1,5 @@
 import { reverse } from 'lodash';
+import onChange from 'on-change';
 
 const formRender = (state, { input, button, feedbackMessage }) => {
   switch (state) {
@@ -135,10 +136,28 @@ const postsRender = (posts, currentPosts, container, i18nInstance) => {
     listItem.append(itemLink, itemBtn);
     listGroup.prepend(listItem);
   });
+
+  const readedPost = posts.reduce((acc, post) => (post.wasRead ? post : acc), null);
+  console.log(readedPost);
 };
-export {
-  formRender,
-  showMessage,
-  feedsRender,
-  postsRender,
+export default (state, elements, i18nInstance) => {
+  const watchedState = onChange(state, (path, value, prevValue) => {
+    switch (path) {
+      case 'ui.form.state':
+        formRender(value, elements);
+        break;
+      case 'ui.form.message':
+        showMessage(value, elements.feedbackMessage, i18nInstance);
+        break;
+      case 'ui.content.feeds':
+        feedsRender(value, elements.feedsContainer, i18nInstance);
+        break;
+      case 'ui.content.posts':
+        postsRender(value, prevValue, elements.postsContainer, i18nInstance);
+        break;
+      default:
+        throw new Error(`unknown state path ${path}`);
+    }
+  });
+  return watchedState;
 };
