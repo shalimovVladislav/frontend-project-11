@@ -1,11 +1,14 @@
 export default (response) => {
   const parser = new DOMParser();
-  const html = parser.parseFromString(response.data.contents, 'text/xml');
-  const rss = html.querySelector('rss');
-  if (!rss) {
-    throw new Error('notContainRSS');
+  const doc = parser.parseFromString(response.data.contents, 'text/xml');
+  const parseError = doc.querySelector('parsererror');
+  if (parseError) {
+    const error = new Error(parseError.textContent);
+    error.isParseError = true;
+    throw error;
   }
 
+  const rss = doc.querySelector('rss');
   const feedTitle = rss.querySelector('title').textContent;
   const feedDescription = rss.querySelector('description').textContent;
   const feed = {
@@ -19,10 +22,12 @@ export default (response) => {
     const postTitle = item.querySelector('title').textContent;
     const postDescription = item.querySelector('description').textContent;
     const postLink = item.querySelector('link').textContent;
+    const wasRead = false;
     const post = {
       title: postTitle,
       description: postDescription,
       link: postLink,
+      wasRead,
     };
     posts.push(post);
   });
