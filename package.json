@@ -1,7 +1,7 @@
 {
   "name": "@hexlet/code",
   "version": "1.0.0",
-  "description": "[![Actions Status](https://github.com/shalimovVladislav/frontend-project-11/workflows/hexlet-check/badge.svg)](https://github.com/shalimovVladislav/frontend-project-11/actions)",
+  "description": "RSS Aggregator is a service for aggregating RSS feeds, with which it is convenient to read various sources, such as blogs.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
