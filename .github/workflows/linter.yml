@@ -1,4 +1,4 @@
-name: RSS aggregator
+name: linter
 
 on:
   - push
