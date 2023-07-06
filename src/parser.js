@@ -22,12 +22,10 @@ export default (response) => {
     const postTitle = item.querySelector('title').textContent;
     const postDescription = item.querySelector('description').textContent;
     const postLink = item.querySelector('link').textContent;
-    const wasRead = false;
     const post = {
       title: postTitle,
       description: postDescription,
       link: postLink,
-      wasRead,
     };
     posts.push(post);
   });
