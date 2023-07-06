@@ -105,9 +105,6 @@ const postsRender = (posts, currentPosts, container, i18nInstance) => {
     itemLink.setAttribute('target', '_blank');
     itemLink.setAttribute('rel', 'noopener noreferrer');
     itemLink.textContent = post.title;
-    itemLink.addEventListener('click', (event) => {
-      event.target.classList.replace('fw-bold', 'fw-normal');
-    });
 
     const itemBtn = document.createElement('button');
     itemBtn.setAttribute('type', 'button');
@@ -116,29 +113,28 @@ const postsRender = (posts, currentPosts, container, i18nInstance) => {
     itemBtn.dataset.bsToggle = 'modal';
     itemBtn.dataset.bsTarget = '#modal';
     itemBtn.textContent = i18nInstance.t('action.view');
-    itemBtn.addEventListener('click', (event) => {
-      const linkElement = event.target.previousSibling;
-      linkElement.classList.replace('fw-bold', 'fw-normal');
-
-      const modal = document.querySelector('.modal');
-
-      const modalTitle = modal.querySelector('.modal-title');
-      modalTitle.textContent = post.title;
-
-      const modalBody = modal.querySelector('.modal-body');
-      modalBody.textContent = post.description;
-
-      const modalFooter = modal.querySelector('.modal-footer');
-      const btnEl = modalFooter.querySelector('.btn');
-      btnEl.setAttribute('href', post.link);
-    });
 
     listItem.append(itemLink, itemBtn);
     listGroup.prepend(listItem);
   });
+};
+const modalRender = (post) => {
+  const modal = document.querySelector('.modal');
 
-  const readedPost = posts.reduce((acc, post) => (post.wasRead ? post : acc), null);
-  console.log(readedPost);
+  const modalTitle = modal.querySelector('.modal-title');
+  modalTitle.textContent = post.title;
+
+  const modalBody = modal.querySelector('.modal-body');
+  modalBody.textContent = post.description;
+
+  const modalFooter = modal.querySelector('.modal-footer');
+  const btnEl = modalFooter.querySelector('.btn');
+  btnEl.setAttribute('href', post.link);
+};
+const viewPostsRender = (ids) => {
+  const lastID = ids.at(-1);
+  const linkElement = document.querySelector(`[data-id="${lastID}"]`);
+  linkElement.classList.replace('fw-bold', 'fw-normal');
 };
 export default (state, elements, i18nInstance) => {
   const watchedState = onChange(state, (path, value, prevValue) => {
@@ -154,6 +150,12 @@ export default (state, elements, i18nInstance) => {
         break;
       case 'ui.content.posts':
         postsRender(value, prevValue, elements.postsContainer, i18nInstance);
+        break;
+      case 'ui.viewPostsIDs':
+        viewPostsRender(value);
+        break;
+      case 'ui.modalPost':
+        modalRender(value);
         break;
       default:
         throw new Error(`unknown state path ${path}`);
