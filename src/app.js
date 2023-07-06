@@ -34,6 +34,8 @@ export default () => {
             feeds: [],
             posts: [],
           },
+          viewPostsIDs: [],
+          modalPost: null,
         },
       };
 
@@ -99,6 +101,18 @@ export default () => {
             watchedState.ui.form.message = error.errors;
             watchedState.ui.form.state = 'failed';
           });
+      });
+      elements.postsContainer.addEventListener('click', (e) => {
+        const { id } = e.target.dataset;
+        const viewPost = watchedState.ui.content.posts.find((post) => post.id === id);
+        if (id) {
+          if (e.target.tagName === 'BUTTON') {
+            watchedState.ui.modalPost = viewPost;
+          }
+          if (!watchedState.ui.viewPostsIDs.includes(id)) {
+            watchedState.ui.viewPostsIDs.push(viewPost.id);
+          }
+        }
       });
       const updateTracking = (feeds, currentPosts) => {
         const currentPostsLinks = currentPosts.map((post) => post.link);
