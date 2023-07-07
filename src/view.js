@@ -1,22 +1,20 @@
 import { reverse } from 'lodash';
 import onChange from 'on-change';
 
-const formRender = (state, { input, button, feedbackMessage }) => {
+const loadingProcessRender = (state, { input, button, feedbackMessage }) => {
   switch (state) {
     case 'filling':
       input.removeAttribute('readonly');
       button.disabled = false;
+      feedbackMessage.classList.add('text-success');
+      input.value = '';
+      input.focus();
       break;
     case 'processing':
       input.classList.remove('is-invalid');
       input.setAttribute('readonly', 'true');
       button.disabled = true;
       feedbackMessage.classList.remove('text-danger');
-      break;
-    case 'processed':
-      feedbackMessage.classList.add('text-success');
-      input.value = '';
-      input.focus();
       break;
     case 'failed':
       input.removeAttribute('readonly');
@@ -139,16 +137,16 @@ const viewPostsRender = (ids) => {
 export default (state, elements, i18nInstance) => {
   const watchedState = onChange(state, (path, value, prevValue) => {
     switch (path) {
-      case 'ui.form.state':
-        formRender(value, elements);
+      case 'loadingProcess':
+        loadingProcessRender(value, elements);
         break;
-      case 'ui.form.message':
+      case 'form.message':
         showMessage(value, elements.feedbackMessage, i18nInstance);
         break;
-      case 'ui.content.feeds':
+      case 'content.feeds':
         feedsRender(value, elements.feedsContainer, i18nInstance);
         break;
-      case 'ui.content.posts':
+      case 'content.posts':
         postsRender(value, prevValue, elements.postsContainer, i18nInstance);
         break;
       case 'ui.viewPostsIDs':
