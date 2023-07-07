@@ -25,15 +25,15 @@ export default () => {
       });
 
       const state = {
+        loadingProcess: 'filling',
+        form: {
+          message: null,
+        },
+        content: {
+          feeds: [],
+          posts: [],
+        },
         ui: {
-          form: {
-            state: 'filling',
-            message: null,
-          },
-          content: {
-            feeds: [],
-            posts: [],
-          },
           viewPostsIDs: [],
           modalPost: null,
         },
@@ -50,8 +50,7 @@ export default () => {
 
       const watchedState = getwatchedState(state, elements, i18nInstance);
 
-      const validate = (url) => {
-        const feedLinks = watchedState.ui.content.feeds.map((feed) => feed.link);
+      const validate = (url, feedLinks) => {
         const shema = yup.string().url().notOneOf(feedLinks);
         return shema.validate(url);
       };
@@ -68,43 +67,44 @@ export default () => {
         const formData = new FormData(e.target);
         const url = formData.get('url').trim();
 
-        validate(url)
+        const feedLinks = watchedState.content.feeds.map((feed) => feed.link);
+
+        validate(url, feedLinks)
           .then((validURL) => {
-            watchedState.ui.form.message = null;
-            watchedState.ui.form.state = 'processing';
+            watchedState.form.message = null;
+            watchedState.loadingProcess = 'processing';
             axios.get(addProxy(validURL))
               .then((response) => {
                 const { feed, posts } = parseRSS(response);
                 feed.link = validURL;
                 feed.id = uniqueId;
-                watchedState.ui.content.feeds.push(feed);
+                watchedState.content.feeds.push(feed);
                 posts.forEach((post) => {
                   post.feedID = feed.id;
                   post.id = uniqueId();
                 });
-                watchedState.ui.content.posts.push(...posts);
-                watchedState.ui.form.message = 'successed';
-                watchedState.ui.form.state = 'processed';
-                watchedState.ui.form.state = 'filling';
+                watchedState.content.posts.push(...posts);
+                watchedState.form.message = 'successed';
+                watchedState.loadingProcess = 'filling';
               })
               .catch((error) => {
                 if (error.message === 'Network Error') {
-                  watchedState.ui.form.message = 'networkError';
+                  watchedState.form.message = 'networkError';
                 }
                 if (error.isParseError) {
-                  watchedState.ui.form.message = 'notContainRSS';
+                  watchedState.form.message = 'notContainRSS';
                 }
-                watchedState.ui.form.state = 'failed';
+                watchedState.loadingProcess = 'failed';
               });
           })
           .catch((error) => {
-            watchedState.ui.form.message = error.errors;
-            watchedState.ui.form.state = 'failed';
+            watchedState.form.message = error.errors;
+            watchedState.loadingProcess = 'failed';
           });
       });
       elements.postsContainer.addEventListener('click', (e) => {
         const { id } = e.target.dataset;
-        const viewPost = watchedState.ui.content.posts.find((post) => post.id === id);
+        const viewPost = watchedState.content.posts.find((post) => post.id === id);
         if (id) {
           if (e.target.tagName === 'BUTTON') {
             watchedState.ui.modalPost = viewPost;
@@ -125,18 +125,18 @@ export default () => {
               .forEach((newPost) => {
                 newPost.feedID = feed.id;
                 newPost.id = uniqueId();
-                watchedState.ui.content.posts.push(newPost);
+                watchedState.content.posts.push(newPost);
               });
           }));
         const promise = Promise.all(promises);
         promise
           .finally(() => {
             setTimeout(() => updateTracking(
-              watchedState.ui.content.feeds,
-              watchedState.ui.content.posts,
+              watchedState.content.feeds,
+              watchedState.content.posts,
             ), 5000);
           });
       };
-      updateTracking(watchedState.ui.content.feeds, watchedState.ui.content.posts);
+      updateTracking(watchedState.content.feeds, watchedState.content.posts);
     });
 };
