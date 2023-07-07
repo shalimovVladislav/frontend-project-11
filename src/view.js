@@ -33,24 +33,27 @@ const showMessage = (value, messageElement, i18nInstance) => {
   }
   messageElement.textContent = i18nInstance.t(`feedbackMessages.${value}`);
 };
+const prepareСontainer = (container, i18nInstance) => {
+  const card = document.createElement('div');
+  card.classList.add('card', 'border-0');
+
+  const cardBody = document.createElement('div');
+  cardBody.classList.add('card-body');
+
+  const cardTitle = document.createElement('h2');
+  cardTitle.classList.add('card-title', 'h4');
+  cardTitle.textContent = i18nInstance.t('posts');
+
+  const listGroup = document.createElement('ul');
+  listGroup.classList.add('list-group', 'border-0', 'rounded-0');
+
+  cardBody.append(cardTitle, listGroup);
+  card.append(cardBody);
+  container.append(cardBody);
+};
 const feedsRender = (feeds, container, i18nInstance) => {
   if (container.innerHTML === '') {
-    const card = document.createElement('div');
-    card.classList.add('card', 'border-0');
-
-    const cardBody = document.createElement('div');
-    cardBody.classList.add('card-body');
-
-    const cardTitle = document.createElement('h2');
-    cardTitle.classList.add('card-title', 'h4');
-    cardTitle.textContent = i18nInstance.t('feeds');
-
-    const listGroup = document.createElement('ul');
-    listGroup.classList.add('list-group', 'border-0', 'rounded-0');
-
-    cardBody.append(cardTitle, listGroup);
-    card.append(cardBody);
-    container.append(cardBody);
+    prepareСontainer(container, i18nInstance);
   }
 
   const newFeed = feeds[feeds.length - 1];
@@ -72,22 +75,7 @@ const feedsRender = (feeds, container, i18nInstance) => {
 };
 const postsRender = (posts, currentPosts, container, i18nInstance) => {
   if (container.innerHTML === '') {
-    const card = document.createElement('div');
-    card.classList.add('card', 'border-0');
-
-    const cardBody = document.createElement('div');
-    cardBody.classList.add('card-body');
-
-    const cardTitle = document.createElement('h2');
-    cardTitle.classList.add('card-title', 'h4');
-    cardTitle.textContent = i18nInstance.t('posts');
-
-    const listGroup = document.createElement('ul');
-    listGroup.classList.add('list-group', 'border-0', 'rounded-0');
-
-    cardBody.append(cardTitle, listGroup);
-    card.append(cardBody);
-    container.append(cardBody);
+    prepareСontainer(container, i18nInstance);
   }
 
   const listGroup = container.querySelector('.list-group');
